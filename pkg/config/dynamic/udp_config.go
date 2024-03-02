@@ -18,6 +18,7 @@ type UDPConfiguration struct {
 type UDPService struct {
 	LoadBalancer *UDPServersLoadBalancer `json:"loadBalancer,omitempty" toml:"loadBalancer,omitempty" yaml:"loadBalancer,omitempty" export:"true"`
 	Weighted     *UDPWeightedRoundRobin  `json:"weighted,omitempty" toml:"weighted,omitempty" yaml:"weighted,omitempty" label:"-" export:"true"`
+	Needle       *UDPNeedle              `json:"needle,omitempty" toml:"needle,omitempty" yaml:"needle,omitempty" export:"true"`
 }
 
 // +k8s:deepcopy-gen=true
@@ -79,4 +80,11 @@ func (l *UDPServersLoadBalancer) Mergeable(loadBalancer *UDPServersLoadBalancer)
 type UDPServer struct {
 	Address string `json:"address,omitempty" toml:"address,omitempty" yaml:"address,omitempty" label:"-"`
 	Port    string `json:"-" toml:"-" yaml:"-" file:"-"`
+}
+
+// +k8s:deepcopy-gen=true
+
+type UDPNeedle struct {
+	Id       string            `json:"id,omitempty" toml:"id,omitempty" yaml:"id,omitempty"`
+	Metadata map[string]string `json:"metadata,omitempty" toml:"metadata,omitempty" yaml:"metadata,omitempty"`
 }

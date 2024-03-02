@@ -185,7 +185,7 @@ func Test_Routing(t *testing.T) {
 		},
 		[]*traefiktls.CertAndStores{})
 
-	middlewaresBuilder := tcpmiddleware.NewBuilder(conf.TCPMiddlewares)
+	middlewaresBuilder := tcpmiddleware.NewBuilder(conf.TCPMiddlewares, nil)
 
 	manager := NewManager(conf, serviceManager, middlewaresBuilder,
 		nil, nil, tlsManager)

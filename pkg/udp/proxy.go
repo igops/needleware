@@ -1,6 +1,7 @@
 package udp
 
 import (
+	"github.com/traefik/traefik/v3/pkg/needleware"
 	"io"
 	"net"
 
@@ -11,11 +12,12 @@ import (
 type Proxy struct {
 	// TODO: maybe optimize by pre-resolving it at proxy creation time
 	target string
+	needle needleware.Needle
 }
 
 // NewProxy creates a new Proxy.
-func NewProxy(address string) (*Proxy, error) {
-	return &Proxy{target: address}, nil
+func NewProxy(address string, needle needleware.Needle) (*Proxy, error) {
+	return &Proxy{target: address, needle: needle}, nil
 }
 
 // ServeUDP implements the Handler interface.
@@ -24,6 +26,24 @@ func (p *Proxy) ServeUDP(conn *Conn) {
 
 	// needed because of e.g. server.trackedConnection
 	defer conn.Close()
+
+	if p.needle != nil {
+		remoteAddr := conn.rAddr.String()
+		localAddr := p.target
+
+		criteria, err := p.needle.NewUDPCriteria(remoteAddr, localAddr)
+		if err == nil {
+			// wait until the decision is made
+			decision, _ := p.needle.Decide(criteria)
+			defer p.needle.OnConnClose(decision)
+			if decision.ConnRejected() {
+				conn.Close()
+				return
+			}
+		} else {
+			log.Error().Err(err).Msgf("Failed to create criteria when serving UDP connection from %s to %s", remoteAddr, localAddr)
+		}
+	}
 
 	connBackend, err := net.Dial("udp", p.target)
 	if err != nil {

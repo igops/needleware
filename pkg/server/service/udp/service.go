@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/traefik/traefik/v3/pkg/needleware"
 	"math/rand"
 	"net"
 	"time"
@@ -19,13 +20,15 @@ import (
 type Manager struct {
 	configs map[string]*runtime.UDPServiceInfo
 	rand    *rand.Rand // For the initial shuffling of load-balancers.
+	needles *needleware.Manager
 }
 
 // NewManager creates a new manager.
-func NewManager(conf *runtime.Configuration) *Manager {
+func NewManager(conf *runtime.Configuration, needles *needleware.Manager) *Manager {
 	return &Manager{
 		configs: conf.UDPServices,
 		rand:    rand.New(rand.NewSource(time.Now().UnixNano())),
+		needles: needles,
 	}
 }
 
@@ -61,7 +64,15 @@ func (m *Manager) BuildUDP(rootCtx context.Context, serviceName string) (udp.Han
 				continue
 			}
 
-			handler, err := udp.NewProxy(server.Address)
+			var needle needleware.Needle = nil
+			if conf.Needle != nil {
+				needle = m.needles.GetNeedle(conf.Needle.Id, conf.Needle.Metadata)
+				if needle == nil {
+					srvLogger.Error().Msgf("Failed to find needle %q", conf.Needle)
+					continue
+				}
+			}
+			handler, err := udp.NewProxy(server.Address, needle)
 			if err != nil {
 				srvLogger.Error().Err(err).Msg("Failed to create server")
 				continue

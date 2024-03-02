@@ -358,6 +358,9 @@ func (p *Provider) loadFileConfigFromDirectory(ctx context.Context, directory st
 				Routers:  make(map[string]*dynamic.UDPRouter),
 				Services: make(map[string]*dynamic.UDPService),
 			},
+			Needleware: &dynamic.Needleware{
+				Needles: make(map[string]*dynamic.Needle),
+			},
 		}
 	}
 
@@ -496,6 +499,17 @@ func (p *Provider) loadFileConfigFromDirectory(ctx context.Context, directory st
 				configuration.TLS.Stores[name] = conf
 			}
 		}
+
+		for name, conf := range c.Needleware.Needles {
+			if _, exists := configuration.Needleware.Needles[name]; exists {
+				logger.Warn().Msgf("Needle %v already configured, skipping", name)
+			} else {
+				if configuration.Needleware.Needles == nil {
+					configuration.Needleware.Needles = map[string]*dynamic.Needle{}
+				}
+				configuration.Needleware.Needles[name] = conf
+			}
+		}
 	}
 
 	if len(configTLSMaps) > 0 && configuration.TLS == nil {
@@ -577,6 +591,9 @@ func (p *Provider) decodeConfiguration(filePath, content string) (*dynamic.Confi
 		UDP: &dynamic.UDPConfiguration{
 			Routers:  make(map[string]*dynamic.UDPRouter),
 			Services: make(map[string]*dynamic.UDPService),
+		},
+		Needleware: &dynamic.Needleware{
+			Needles: make(map[string]*dynamic.Needle),
 		},
 	}
 

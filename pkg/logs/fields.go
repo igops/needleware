@@ -15,4 +15,5 @@ const (
 	ServerIndex          = "serverIndex"
 	TLSStoreName         = "tlsStoreName"
 	ServersTransportName = "serversTransport"
+	NeedleName           = "needleName"
 )

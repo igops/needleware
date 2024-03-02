@@ -3,6 +3,8 @@ package tcpmiddleware
 import (
 	"context"
 	"fmt"
+	"github.com/traefik/traefik/v3/pkg/middlewares/tcp/tcpneedle"
+	"github.com/traefik/traefik/v3/pkg/needleware"
 	"strings"
 
 	"github.com/traefik/traefik/v3/pkg/config/runtime"
@@ -21,11 +23,15 @@ const (
 // Builder the middleware builder.
 type Builder struct {
 	configs map[string]*runtime.TCPMiddlewareInfo
+	needles *needleware.Manager
 }
 
 // NewBuilder creates a new Builder.
-func NewBuilder(configs map[string]*runtime.TCPMiddlewareInfo) *Builder {
-	return &Builder{configs: configs}
+func NewBuilder(configs map[string]*runtime.TCPMiddlewareInfo, needles *needleware.Manager) *Builder {
+	return &Builder{
+		configs: configs,
+		needles: needles,
+	}
 }
 
 // BuildChain creates a middleware chain.
@@ -98,6 +104,18 @@ func (b *Builder) buildConstructor(ctx context.Context, middlewareName string) (
 	if config.IPAllowList != nil {
 		middleware = func(next tcp.Handler) (tcp.Handler, error) {
 			return ipallowlist.New(ctx, next, *config.IPAllowList, middlewareName)
+		}
+	}
+
+	// Needles
+	if config.Needle != nil {
+		middleware = func(next tcp.Handler) (tcp.Handler, error) {
+			needleName := provider.GetQualifiedName(ctx, config.Needle.Id)
+			needle := b.needles.GetNeedle(needleName, config.Needle.Metadata)
+			if needle == nil {
+				return nil, fmt.Errorf("invalid middleware %q configuration: needle %q does not exist", middlewareName, needleName)
+			}
+			return tcpneedle.New(ctx, next, needle, middlewareName)
 		}
 	}
 

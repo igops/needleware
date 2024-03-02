@@ -6,6 +6,7 @@ package dynamic
 type TCPMiddleware struct {
 	InFlightConn *TCPInFlightConn `json:"inFlightConn,omitempty" toml:"inFlightConn,omitempty" yaml:"inFlightConn,omitempty" export:"true"`
 	IPAllowList  *TCPIPAllowList  `json:"ipAllowList,omitempty" toml:"ipAllowList,omitempty" yaml:"ipAllowList,omitempty" export:"true"`
+	Needle       *TCPNeedle       `json:"needle,omitempty" toml:"needle,omitempty" yaml:"needle,omitempty" export:"true"`
 }
 
 // +k8s:deepcopy-gen=true
@@ -27,4 +28,11 @@ type TCPInFlightConn struct {
 type TCPIPAllowList struct {
 	// SourceRange defines the allowed IPs (or ranges of allowed IPs by using CIDR notation).
 	SourceRange []string `json:"sourceRange,omitempty" toml:"sourceRange,omitempty" yaml:"sourceRange,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+
+type TCPNeedle struct {
+	Id       string            `json:"id,omitempty" toml:"id,omitempty" yaml:"id,omitempty"`
+	Metadata map[string]string `json:"metadata,omitempty" toml:"metadata,omitempty" yaml:"metadata,omitempty"`
 }

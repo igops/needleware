@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/traefik/traefik/v3/pkg/needleware"
 
 	"github.com/rs/zerolog/log"
 	"github.com/traefik/traefik/v3/pkg/config/runtime"
@@ -90,16 +91,20 @@ func (f *RouterFactory) CreateRouters(rtConf *runtime.Configuration) (map[string
 
 	serviceManager.LaunchHealthCheck(ctx)
 
+	// Needles
+	needlewareManager := needleware.NewManager()
+	needlewareManager.BuildNeedles(ctx, rtConf)
+
 	// TCP
 	svcTCPManager := tcpsvc.NewManager(rtConf, f.dialerManager)
 
-	middlewaresTCPBuilder := tcpmiddleware.NewBuilder(rtConf.TCPMiddlewares)
+	middlewaresTCPBuilder := tcpmiddleware.NewBuilder(rtConf.TCPMiddlewares, needlewareManager)
 
 	rtTCPManager := tcprouter.NewManager(rtConf, svcTCPManager, middlewaresTCPBuilder, handlersNonTLS, handlersTLS, f.tlsManager)
 	routersTCP := rtTCPManager.BuildHandlers(ctx, f.entryPointsTCP)
 
 	// UDP
-	svcUDPManager := udpsvc.NewManager(rtConf)
+	svcUDPManager := udpsvc.NewManager(rtConf, needlewareManager)
 	rtUDPManager := udprouter.NewManager(rtConf, svcUDPManager)
 	routersUDP := rtUDPManager.BuildHandlers(ctx, f.entryPointsUDP)
 

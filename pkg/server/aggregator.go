@@ -34,6 +34,9 @@ func mergeConfiguration(configurations dynamic.Configurations, defaultEntryPoint
 			Stores:  make(map[string]tls.Store),
 			Options: make(map[string]tls.Options),
 		},
+		Needleware: &dynamic.Needleware{
+			Needles: make(map[string]*dynamic.Needle),
+		},
 	}
 
 	var defaultTLSOptionProviders []string
@@ -121,6 +124,12 @@ func mergeConfiguration(configurations dynamic.Configurations, defaultEntryPoint
 				}
 
 				conf.TLS.Options[tlsOptionsName] = options
+			}
+		}
+
+		if configuration.Needleware != nil {
+			for needleName, needle := range configuration.Needleware.Needles {
+				conf.Needleware.Needles[provider.MakeQualifiedName(pvd, needleName)] = needle
 			}
 		}
 	}

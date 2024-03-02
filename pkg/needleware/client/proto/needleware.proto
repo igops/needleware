@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package me.igops.needleware;
+
+option go_package = "./pb";
+//option java_multiple_files = true;
+//option java_package = "me.igops.traefik.connobserver.pb";
+
+import "google/protobuf/empty.proto";
+
+enum Protocol {
+  UDP = 0;
+  TCP = 1;
+}
+
+enum DecisionCode {
+  ACCEPT = 0;
+  REJECT = 1;
+}
+
+message ConnectionId {
+  int32 value = 1;
+}
+
+message Address {
+  string host = 1;
+  int32 port = 2;
+}
+
+message Metadata {
+  map<string, string> data = 1;
+}
+
+message Connection {
+  ConnectionId id = 1;
+  Protocol protocol = 2;
+  Address remoteAddress = 3;
+  Address localAddress = 4;
+  reserved 5 to 99;
+  optional Metadata metadata = 101;
+}
+
+message Decision {
+  DecisionCode code = 1;
+}
+
+service Needleware {
+  rpc onConnOpened(Connection) returns (Decision) {}
+  rpc onConnClosed(ConnectionId) returns (google.protobuf.Empty) {}
+}

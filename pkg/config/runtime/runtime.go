@@ -32,6 +32,7 @@ type Configuration struct {
 	TCPServices    map[string]*TCPServiceInfo    `json:"tcpServices,omitempty"`
 	UDPRouters     map[string]*UDPRouterInfo     `json:"udpRouters,omitempty"`
 	UDPServices    map[string]*UDPServiceInfo    `json:"udpServices,omitempty"`
+	Needles        map[string]*NeedleInfo        `json:"needles,omitempty"`
 }
 
 // NewConfig returns a Configuration initialized with the given conf. It never returns nil.
@@ -103,6 +104,15 @@ func NewConfig(conf dynamic.Configuration) *Configuration {
 			runtimeConfig.UDPServices = make(map[string]*UDPServiceInfo, len(conf.UDP.Services))
 			for k, v := range conf.UDP.Services {
 				runtimeConfig.UDPServices[k] = &UDPServiceInfo{UDPService: v, Status: StatusEnabled}
+			}
+		}
+	}
+
+	if conf.Needleware != nil {
+		if len(conf.Needleware.Needles) > 0 {
+			runtimeConfig.Needles = make(map[string]*NeedleInfo, len(conf.Needleware.Needles))
+			for k, v := range conf.Needleware.Needles {
+				runtimeConfig.Needles[k] = &NeedleInfo{Needle: v, Status: StatusEnabled}
 			}
 		}
 	}
@@ -225,6 +235,27 @@ func (c *Configuration) PopulateUsedBy() {
 		}
 
 		sort.Strings(c.UDPServices[k].UsedBy)
+	}
+
+	for needleName, needle := range c.Needles {
+		// lazily initialize Status in case caller forgot to do it (who is the caller 🤨)?
+		if needle.Status == "" {
+			needle.Status = StatusEnabled
+		}
+
+		for midName, mid := range c.TCPMiddlewares {
+			if mid.Needle != nil && mid.Needle.Id == needleName {
+				c.Needles[needleName].UsedByTCPMiddlewares = append(c.Needles[needleName].UsedByTCPMiddlewares, midName)
+			}
+		}
+		sort.Strings(c.Needles[needleName].UsedByTCPMiddlewares)
+
+		for udpServiceName, udpService := range c.UDPServices {
+			if udpService.Needle != nil && udpService.Needle.Id == needleName {
+				c.Needles[needleName].UsedByUDPServices = append(c.Needles[needleName].UsedByUDPServices, udpServiceName)
+			}
+		}
+		sort.Strings(c.Needles[needleName].UsedByUDPServices)
 	}
 }
 
